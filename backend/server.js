@@ -13,24 +13,32 @@ app.use(express.json());
 app.use(express.static("../public"));
 
 /* ============================= */
-/* PORT DYNAMIQUE (RENDER) */
+/* PORT DYNAMIQUE RENDER */
 /* ============================= */
 
 const PORT = process.env.PORT || 3000;
+
+/* ============================= */
+/* 🔥 TEST ROUTE (Pour vérifier que le serveur fonctionne) */
+/* ============================= */
+
+app.get("/", (req, res) => {
+  res.json({ message: "🔥 Nano Banana Backend Online" });
+});
 
 /* ============================= */
 /* 🦙 OPTIMISER PROMPT AVEC LLAMA */
 /* ============================= */
 
 app.post("/optimize", async (req, res) => {
-
   try {
-
     const prompt = req.body.prompt;
 
     if (!prompt) {
       return res.status(400).json({ error: "Prompt manquant" });
     }
+
+    console.log("🦙 Optimisation du prompt :", prompt);
 
     const response = await axios.post(
       "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
@@ -58,23 +66,20 @@ ${prompt}
 
   } catch (error) {
 
-    console.log("❌ ERROR OPTIMIZE:", error.response?.data || error.message);
+    console.log("❌ ERROR LLAMA:");
+    console.log(error.response?.data || error.message);
 
     res.status(500).json({
       error: error.response?.data || error.message
     });
-
   }
-
 });
-
 
 /* ============================= */
 /* 🎨 GENERER IMAGE AVEC SDXL */
 /* ============================= */
 
 app.post("/generate-image", async (req, res) => {
-
   try {
 
     const prompt = req.body.prompt;
@@ -83,7 +88,7 @@ app.post("/generate-image", async (req, res) => {
       return res.status(400).json({ error: "Prompt manquant" });
     }
 
-    console.log("🖼 Prompt envoyé à SDXL:", prompt);
+    console.log("🖼 Prompt envoyé à SDXL :", prompt);
 
     const response = await axios.post(
       "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
@@ -106,16 +111,14 @@ app.post("/generate-image", async (req, res) => {
 
   } catch (error) {
 
-    console.log("❌ ERROR IMAGE:", error.response?.data || error.message);
+    console.log("🚨 ERROR IMAGE:");
+    console.log(error.response?.data || error.message);
 
     res.status(500).json({
       error: error.response?.data || error.message
     });
-
   }
-
 });
-
 
 /* ============================= */
 /* 🚀 LANCEMENT */
