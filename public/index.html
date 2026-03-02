@@ -2,12 +2,17 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Nano Banana Generator</title>
+<title>Nano Banana AI</title>
 
 <style>
+
+/* ========================= */
+/* 🌿 THEME BANANA */
+/* ========================= */
+
 body{
 margin:0;
-font-family: Arial;
+font-family:Arial;
 background:#0b3d02;
 background-image:url("https://i.postimg.cc/FHC5G1FX/nano-banana-logo.png");
 background-size:cover;
@@ -18,36 +23,60 @@ color:white;
 
 h1{
 color:red;
+text-shadow:0 0 15px red;
 }
 
 .container{
-backdrop-filter:blur(10px);
-background:rgba(0,0,0,0.5);
-padding:20px;
+backdrop-filter: blur(15px);
+background:rgba(0,0,0,0.6);
+padding:30px;
 border-radius:20px;
 width:80%;
 margin:auto;
-margin-top:30px;
+margin-top:40px;
 }
+
+/* TEXTAREA */
+
+textarea{
+width:90%;
+height:120px;
+border-radius:10px;
+padding:10px;
+border:none;
+margin:10px;
+font-size:16px;
+}
+
+/* BUTTONS */
 
 button{
 background:red;
 color:white;
-padding:10px 15px;
+padding:12px 18px;
 border:none;
-border-radius:10px;
+border-radius:12px;
 cursor:pointer;
-margin:10px;
 font-weight:bold;
-box-shadow:0 0 15px red;
+margin:10px;
+box-shadow:0 0 10px red;
 }
 
-textarea{
-width:80%;
-height:120px;
-margin-top:20px;
+button:hover{
+opacity:0.8;
 }
+
+/* IMAGE */
+
+img{
+margin-top:20px;
+max-width:500px;
+border-radius:15px;
+box-shadow:0 0 20px black;
+}
+
 </style>
+
 </head>
 <body>
 
@@ -55,52 +84,13 @@ margin-top:20px;
 
 <div class="container">
 
-<textarea id="prompt" placeholder="Enter base prompt..."></textarea>
+<h3>✍️ Base Prompt</h3>
+
+<textarea id="prompt" placeholder="Décris l’image que tu veux générer..."></textarea>
 
 <br>
 
-<button onclick="optimize()">🦙 Optimize</button>
-<button onclick="generateImage()">🍌 Generate Image</button>
+<button onclick="optimize()">🦙 Optimiser avec Llama</button>
+<button onclick="generateImage()">🍌 Générer Image</button>
 
-<br>
-
-<textarea id="optimized"></textarea>
-
-<div id="result"></div>
-
-</div>
-
-<script>
-
-async function optimize(){
-const basePrompt = document.getElementById("prompt").value;
-
-const response = await fetch("/optimize",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({prompt:basePrompt})
-});
-
-const data = await response.json();
-document.getElementById("optimized").value = data.optimized;
-}
-
-async function generateImage(){
-const prompt = document.getElementById("optimized").value;
-
-const response = await fetch("/generate-image",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({prompt:prompt})
-});
-
-const data = await response.json();
-
-document.getElementById("result").innerHTML =
-`<img src="${data.image}" width="400">`;
-}
-
-</script>
-
-</body>
-</html>
+<h3
