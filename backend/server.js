@@ -64,7 +64,7 @@ app.post("/generate-image", async (req, res) => {
   try {
 
     const response = await axios.post(
-      "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
+      "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
       {
         inputs: req.body.prompt
       },
