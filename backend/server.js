@@ -10,7 +10,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static("../public"));
+app.use(express.static("public"));
 
 /* ============================= */
 /* PORT RENDER */
@@ -18,18 +18,16 @@ app.use(express.static("../public"));
 
 const PORT = process.env.PORT || 10000;
 
-/* ===================================================== */
-/* 🔥 ROUTE TEST */
-/* ===================================================== */
+/* ============================= */
+/* TEST ROUTE */
+/* ============================= */
 
 app.get("/", (req, res) => {
-  res.json({
-    status: "🔥 Nano Banana Backend Online"
-  });
+  res.json({ message: "🔥 Nano Banana Backend Online" });
 });
 
 /* ===================================================== */
-/* 🦙 LLAMA VIA ROUTER (CHAT COMPLETIONS) */
+/* 🦙 LLAMA - OPTIMISATION PROMPT VIA ROUTER HUGGINGFACE */
 /* ===================================================== */
 
 app.post("/optimize", async (req, res) => {
@@ -47,21 +45,18 @@ app.post("/optimize", async (req, res) => {
     const response = await axios.post(
       "https://router.huggingface.co/v1/chat/completions",
       {
-        model: "meta-llama/Meta-Llama-3-8B-Instruct:novita",
+        model: "meta-llama/Meta-Llama-3-8B-Instruct",
         messages: [
           {
+            role: "system",
+            content: "You are a professional prompt engineer."
+          },
+          {
             role: "user",
-            content: `
-You are a professional prompt engineer.
-
-Optimize this prompt for cinematic AI image generation:
-
-${prompt}
-            `
+            content: `Optimize this prompt for cinematic image generation:\n\n${prompt}`
           }
         ],
-        max_tokens: 512,
-        temperature: 0.7
+        max_tokens: 500
       },
       {
         headers: {
@@ -72,15 +67,12 @@ ${prompt}
     );
 
     res.json({
-      optimized:
-        response.data?.choices?.[0]?.message?.content ||
-        "Erreur optimisation"
+      optimized: response.data.choices[0].message.content
     });
 
   } catch (error) {
 
-    console.log("❌ LLAMA ERROR");
-    console.log(error.response?.data || error.message);
+    console.log("❌ ERROR LLAMA", error.response?.data || error.message);
 
     res.status(500).json({
       error: error.response?.data || error.message
@@ -91,7 +83,7 @@ ${prompt}
 
 
 /* ===================================================== */
-/* 🎨 STABLE DIFFUSION XL VIA ROUTER (IMAGE) */
+/* 🎨 STABLE DIFFUSION v1.5 - IMAGE GENERATION */
 /* ===================================================== */
 
 app.post("/generate-image", async (req, res) => {
@@ -104,12 +96,16 @@ app.post("/generate-image", async (req, res) => {
       return res.status(400).json({ error: "Prompt manquant" });
     }
 
-    console.log("🖼 Image prompt :", prompt);
+    console.log("🖼 Génération image :", prompt);
 
     const response = await axios.post(
-      "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0",
+      "https://router.huggingface.co/hf-inference/models/stable-diffusion-v1-5/stable-diffusion-v1-5",
       {
-        inputs: prompt
+        inputs: prompt,
+        parameters: {
+          width: 512,
+          height: 512
+        }
       },
       {
         headers: {
@@ -128,8 +124,7 @@ app.post("/generate-image", async (req, res) => {
 
   } catch (error) {
 
-    console.log("🚨 IMAGE ERROR");
-    console.log(error.response?.data || error.message);
+    console.log("🚨 ERROR IMAGE", error.response?.data || error.message);
 
     res.status(500).json({
       error: error.response?.data || error.message
@@ -139,9 +134,9 @@ app.post("/generate-image", async (req, res) => {
 });
 
 
-/* ===================================================== */
-/* 🚀 LANCEMENT */
-/* ===================================================== */
+/* ============================= */
+/* LANCEMENT */
+/* ============================= */
 
 app.listen(PORT, () => {
   console.log("🔥 Server running on port", PORT);
