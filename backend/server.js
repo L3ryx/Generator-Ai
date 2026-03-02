@@ -14,18 +14,29 @@ app.use(cors());
 app.use(express.json());
 
 /* ============================= */
-/* PATH CONFIG (IMPORTANT POUR FRONTEND) */
+/* PATH CONFIG */
 /* ============================= */
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/* Servir le dossier public */
-app.use(express.static(path.join(__dirname, "public")));
+/* 
+   STRUCTURE OBLIGATOIRE :
 
-/* Route principale → Charge l’interface */
+   project/
+   ├── backend/
+   │     └── server.js
+   │
+   └── public/
+         └── index.html
+*/
+
+/* Servir le dossier public (niveau au-dessus du backend) */
+app.use(express.static(path.join(__dirname, "..", "public")));
+
+/* Route principale → charge l’interface */
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "..", "public", "index.html"));
 });
 
 /* ============================= */
@@ -47,6 +58,8 @@ app.post("/optimize", async (req, res) => {
     if (!prompt) {
       return res.status(400).json({ error: "Prompt manquant" });
     }
+
+    console.log("🦙 Optimisation :", prompt);
 
     const response = await axios.post(
       "https://router.huggingface.co/v1/chat/completions",
@@ -72,13 +85,15 @@ ${prompt}
       }
     );
 
-    const optimized = response.data?.choices?.[0]?.message?.content;
+    const optimized =
+      response.data?.choices?.[0]?.message?.content ||
+      "Optimisation échouée";
 
     res.json({ optimized });
 
   } catch (error) {
 
-    console.error("❌ LLAMA ERROR:", error.response?.data || error.message);
+    console.error("❌ LLAMA ERROR :", error.response?.data || error.message);
 
     res.status(500).json({
       error: error.response?.data || error.message
@@ -102,13 +117,11 @@ app.post("/generate-image", async (req, res) => {
       return res.status(400).json({ error: "Prompt manquant" });
     }
 
-    console.log("🖼 Génération image :", prompt);
+    console.log("🖼 Image demandée :", prompt);
 
     const response = await axios.post(
       "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
-      {
-        inputs: prompt
-      },
+      { inputs: prompt },
       {
         headers: {
           Authorization: `Bearer ${process.env.HF_TOKEN}`
@@ -117,13 +130,15 @@ app.post("/generate-image", async (req, res) => {
       }
     );
 
-    const base64 = Buffer.from(response.data).toString("base64");
+    const base64Image = Buffer.from(response.data).toString("base64");
 
-    res.json({ image: base64 });
+    res.json({
+      image: base64Image
+    });
 
   } catch (error) {
 
-    console.error("🚨 IMAGE ERROR:", error.response?.data || error.message);
+    console.error("🚨 IMAGE ERROR :", error.response?.data || error.message);
 
     res.status(500).json({
       error: error.response?.data || error.message
