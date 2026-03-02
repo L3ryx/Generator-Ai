@@ -93,4 +93,70 @@ box-shadow:0 0 20px black;
 <button onclick="optimize()">🦙 Optimiser avec Llama</button>
 <button onclick="generateImage()">🍌 Générer Image</button>
 
-<h3
+<h3>✨ Résultat</h3>
+
+<div id="result"></div>
+
+</div>
+
+<!-- ============================= -->
+<!-- JAVASCRIPT -->
+<!-- ============================= -->
+
+<script>
+
+/* ============================= */
+/* 🦙 OPTIMISER PROMPT */
+/* ============================= */
+
+async function optimize(){
+
+const prompt = document.getElementById("prompt").value;
+
+const res = await fetch("/optimize",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({prompt})
+});
+
+const data = await res.json();
+
+if(data.optimized){
+document.getElementById("prompt").value = data.optimized;
+}else{
+alert("Erreur optimisation");
+}
+
+}
+
+/* ============================= */
+/* 🎨 GENERER IMAGE */
+/* ============================= */
+
+async function generateImage(){
+
+const prompt = document.getElementById("prompt").value;
+
+const res = await fetch("/generate-image",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({prompt})
+});
+
+const data = await res.json();
+
+if(data.image){
+
+document.getElementById("result").innerHTML =
+`<img src="data:image/png;base64,${data.image}" />`;
+
+}else{
+alert("Erreur génération image");
+}
+
+}
+
+</script>
+
+</body>
+</html>
