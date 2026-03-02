@@ -10,15 +10,11 @@ body{
 margin:0;
 font-family:Arial;
 background:#0b3d02;
-background-image:url("https://i.postimg.cc/FHC5G1FX/nano-banana-logo.png");
-background-size:cover;
-background-attachment:fixed;
 text-align:center;
 color:white;
 }
 
 .container{
-backdrop-filter: blur(15px);
 background:rgba(0,0,0,0.6);
 padding:40px;
 border-radius:25px;
@@ -26,11 +22,6 @@ width:80%;
 margin:auto;
 margin-top:60px;
 box-shadow:0 0 40px black;
-}
-
-h1{
-color:red;
-text-shadow:0 0 15px red;
 }
 
 textarea{
@@ -50,27 +41,23 @@ padding:12px 20px;
 border:none;
 border-radius:15px;
 cursor:pointer;
-font-weight:bold;
 margin:10px;
-box-shadow:0 0 10px red;
 }
 
 button:hover{
 opacity:0.8;
 }
 
-#resultImage{
+img{
 margin-top:20px;
 max-width:500px;
 border-radius:20px;
 display:none;
-box-shadow:0 0 30px black;
 }
 
 .loader{
 display:none;
 margin-top:20px;
-font-size:18px;
 color:yellow;
 }
 
@@ -82,45 +69,33 @@ color:yellow;
 
 <h1>🔥 Nano Banana AI</h1>
 
-<textarea id="prompt" placeholder="Décris l’image que tu veux générer..."></textarea>
+<textarea id="prompt" placeholder="Décris ton image..."></textarea>
 
 <br>
 
 <button onclick="optimize()">🦙 Optimiser</button>
-<button onclick="generate()">🍌 Générer Image</button>
+<button onclick="generate()">🍌 Générer</button>
 
 <div class="loader" id="loader">
-⏳ Génération en cours...
+⏳ Génération...
 </div>
 
-<img id="resultImage" />
+<img id="image"/>
 
 </div>
 
 <script>
 
-/* ============================= */
-/* 🔥 TON BACKEND RENDER */
-/* ============================= */
-
-const API_URL = "https://generator-ai-04o3.onrender.com";
-
-/* ============================= */
-/* 🦙 OPTIMISER AVEC LLAMA */
-/* ============================= */
+/* 🔥 MET TON URL RENDER ICI */
+const API_URL = "https://TON-URL.onrender.com";
 
 async function optimize(){
 
 const prompt = document.getElementById("prompt").value;
 
-if(!prompt){
-alert("Écris un prompt !");
-return;
-}
-
 const res = await fetch(API_URL + "/optimize", {
 method:"POST",
-headers:{ "Content-Type":"application/json" },
+headers:{ "Content-Type":"application/json"},
 body:JSON.stringify({ prompt })
 });
 
@@ -128,46 +103,32 @@ const data = await res.json();
 
 if(data.optimized){
 document.getElementById("prompt").value = data.optimized;
-}else{
-alert("Erreur optimisation");
 }
 
 }
-
-/* ============================= */
-/* 🎨 GENERER IMAGE */
-/* ============================= */
 
 async function generate(){
 
 const prompt = document.getElementById("prompt").value;
 
-if(!prompt){
-alert("Écris un prompt !");
-return;
-}
-
 document.getElementById("loader").style.display="block";
 
-const res = await fetch(API_URL + "/generate-image", {
+const res = await fetch(API_URL + "/generate-image",{
 method:"POST",
-headers:{ "Content-Type":"application/json" },
+headers:{ "Content-Type":"application/json"},
 body:JSON.stringify({ prompt })
 });
 
 const data = await res.json();
 
-const img = document.getElementById("resultImage");
-
 if(data.image){
 
+const img = document.getElementById("image");
 img.src = "data:image/png;base64," + data.image;
-img.style.display="block";
+img.style.display = "block";
 
 }else{
-
 alert("Erreur génération");
-
 }
 
 document.getElementById("loader").style.display="none";
