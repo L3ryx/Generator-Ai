@@ -1,43 +1,16 @@
 import express from "express";
 import axios from "axios";
 import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
-
-/* ============================= */
-/* APP SETUP */
-/* ============================= */
 
 const app = express();
 
+/* ============================= */
+/* MIDDLEWARE */
+/* ============================= */
+
 app.use(cors());
 app.use(express.json());
-
-/* ============================= */
-/* PATH CONFIG */
-/* ============================= */
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-/* 
-   STRUCTURE OBLIGATOIRE :
-
-   project/
-   ├── backend/
-   │     └── server.js
-   │
-   └── public/
-         └── index.html
-*/
-
-/* Servir le dossier public (niveau au-dessus du backend) */
-app.use(express.static(path.join(__dirname, "..", "public")));
-
-/* Route principale → charge l’interface */
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "public", "index.html"));
-});
+app.use(express.static("public"));
 
 /* ============================= */
 /* PORT RENDER */
@@ -45,9 +18,17 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 
-/* ============================= */
-/* 🦙 LLAMA VIA HUGGINGFACE ROUTER */
-/* ============================= */
+/* ===================================================== */
+/* 🟢 ROUTE TEST */
+/* ===================================================== */
+
+app.get("/", (req, res) => {
+  res.json({ message: "🔥 Nano Banana Backend Online" });
+});
+
+/* ===================================================== */
+/* 🦙 LLAMA VIA HUGGINGFACE ROUTER (VERSION OFFICIELLE) */
+/* ===================================================== */
 
 app.post("/optimize", async (req, res) => {
 
@@ -64,18 +45,18 @@ app.post("/optimize", async (req, res) => {
     const response = await axios.post(
       "https://router.huggingface.co/v1/chat/completions",
       {
-        model: "meta-llama/Meta-Llama-3-8B-Instruct:novita",
+        model: "meta-llama/Meta-Llama-3-8B-Instruct",
         messages: [
           {
+            role: "system",
+            content: "You are a professional prompt engineer. Optimize for cinematic image generation."
+          },
+          {
             role: "user",
-            content: `
-You are a professional prompt engineer.
-Optimize this prompt for cinematic image generation:
-
-${prompt}
-`
+            content: prompt
           }
-        ]
+        ],
+        max_tokens: 512
       },
       {
         headers: {
@@ -85,27 +66,27 @@ ${prompt}
       }
     );
 
-    const optimized =
-      response.data?.choices?.[0]?.message?.content ||
-      "Optimisation échouée";
+    const optimized = response.data?.choices?.[0]?.message?.content;
 
-    res.json({ optimized });
+    res.json({
+      optimized: optimized || "Erreur optimisation"
+    });
 
-  } catch (error) {
+  } catch (err) {
 
-    console.error("❌ LLAMA ERROR :", error.response?.data || error.message);
+    console.error("🚨 ERROR LLAMA :", err.response?.data || err.message);
 
     res.status(500).json({
-      error: error.response?.data || error.message
+      error: err.response?.data || err.message
     });
   }
 
 });
 
 
-/* ============================= */
-/* 🎨 STABLE DIFFUSION XL */
-/* ============================= */
+/* ===================================================== */
+/* 🎨 STABLE DIFFUSION XL VIA ROUTER (PLUS STABLE) */
+/* ===================================================== */
 
 app.post("/generate-image", async (req, res) => {
 
@@ -117,18 +98,29 @@ app.post("/generate-image", async (req, res) => {
       return res.status(400).json({ error: "Prompt manquant" });
     }
 
-    console.log("🖼 Image demandée :", prompt);
+    console.log("🖼 Génération image :", prompt);
 
     const response = await axios.post(
-      "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
-      { inputs: prompt },
+      "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0",
+      {
+        inputs: prompt,
+        parameters: {
+          negative_prompt: "blurry, low quality, distorted, ugly"
+        }
+      },
       {
         headers: {
-          Authorization: `Bearer ${process.env.HF_TOKEN}`
+          Authorization: `Bearer ${process.env.HF_TOKEN}`,
+          "Content-Type": "application/json"
         },
-        responseType: "arraybuffer"
+        responseType: "arraybuffer",
+        timeout: 180000
       }
     );
+
+    if (!response.data) {
+      return res.status(500).json({ error: "Image vide reçue" });
+    }
 
     const base64Image = Buffer.from(response.data).toString("base64");
 
@@ -136,21 +128,21 @@ app.post("/generate-image", async (req, res) => {
       image: base64Image
     });
 
-  } catch (error) {
+  } catch (err) {
 
-    console.error("🚨 IMAGE ERROR :", error.response?.data || error.message);
+    console.error("🚨 IMAGE ERROR :", err.response?.data || err.message);
 
     res.status(500).json({
-      error: error.response?.data || error.message
+      error: err.response?.data || err.message
     });
   }
 
 });
 
 
-/* ============================= */
-/* START SERVER */
-/* ============================= */
+/* ===================================================== */
+/* 🚀 LANCEMENT */
+/* ===================================================== */
 
 app.listen(PORT, () => {
   console.log("🔥 Server running on port", PORT);
