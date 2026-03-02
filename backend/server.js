@@ -4,23 +4,33 @@ import cors from "cors";
 
 const app = express();
 
+/* ============================= */
+/* MIDDLEWARE */
+/* ============================= */
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static("../public"));
 
 /* ============================= */
-/* 🔥 PORT DYNAMIQUE RENDER */
+/* PORT DYNAMIQUE (RENDER) */
 /* ============================= */
 
 const PORT = process.env.PORT || 3000;
 
 /* ============================= */
-/* 🦙 LLAMA → OPTIMISER PROMPT */
+/* 🦙 OPTIMISER PROMPT AVEC LLAMA */
 /* ============================= */
 
 app.post("/optimize", async (req, res) => {
 
   try {
+
+    const prompt = req.body.prompt;
+
+    if (!prompt) {
+      return res.status(400).json({ error: "Prompt manquant" });
+    }
 
     const response = await axios.post(
       "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
@@ -30,7 +40,7 @@ You are a professional prompt engineer.
 
 Optimize this prompt for cinematic image generation:
 
-${req.body.prompt}
+${prompt}
 `
       },
       {
@@ -40,14 +50,18 @@ ${req.body.prompt}
       }
     );
 
+    const result = response.data;
+
     res.json({
-      optimized: response.data[0]?.generated_text
+      optimized: result[0]?.generated_text || "Erreur optimisation"
     });
 
   } catch (error) {
 
+    console.log("❌ ERROR OPTIMIZE:", error.response?.data || error.message);
+
     res.status(500).json({
-      error: error.message
+      error: error.response?.data || error.message
     });
 
   }
@@ -56,17 +70,25 @@ ${req.body.prompt}
 
 
 /* ============================= */
-/* 🎨 STABLE DIFFUSION → IMAGE */
+/* 🎨 GENERER IMAGE AVEC SDXL */
 /* ============================= */
 
 app.post("/generate-image", async (req, res) => {
 
   try {
 
+    const prompt = req.body.prompt;
+
+    if (!prompt) {
+      return res.status(400).json({ error: "Prompt manquant" });
+    }
+
+    console.log("🖼 Prompt envoyé à SDXL:", prompt);
+
     const response = await axios.post(
       "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
       {
-        inputs: req.body.prompt
+        inputs: prompt
       },
       {
         headers: {
@@ -84,8 +106,10 @@ app.post("/generate-image", async (req, res) => {
 
   } catch (error) {
 
+    console.log("❌ ERROR IMAGE:", error.response?.data || error.message);
+
     res.status(500).json({
-      error: error.message
+      error: error.response?.data || error.message
     });
 
   }
@@ -94,9 +118,9 @@ app.post("/generate-image", async (req, res) => {
 
 
 /* ============================= */
-/* 🚀 LANCEMENT DU SERVEUR */
+/* 🚀 LANCEMENT */
 /* ============================= */
 
 app.listen(PORT, () => {
-  console.log("🔥 Server running on port " + PORT);
+  console.log("🔥 Server running on port", PORT);
 });
