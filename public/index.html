@@ -100,18 +100,23 @@ color:yellow;
 <script>
 
 /* ============================= */
-/* URL BACKEND (REMPLACE PAR TON URL) */
+/* 🔥 TON BACKEND RENDER */
 /* ============================= */
 
-const API_URL = "https://TON-URL.onrender.com";
+const API_URL = "https://generator-ai-04o3.onrender.com";
 
 /* ============================= */
-/* OPTIMISER AVEC LLAMA */
+/* 🦙 OPTIMISER AVEC LLAMA */
 /* ============================= */
 
 async function optimize(){
 
 const prompt = document.getElementById("prompt").value;
+
+if(!prompt){
+alert("Écris un prompt !");
+return;
+}
 
 const res = await fetch(API_URL + "/optimize", {
 method:"POST",
@@ -121,17 +126,26 @@ body:JSON.stringify({ prompt })
 
 const data = await res.json();
 
+if(data.optimized){
 document.getElementById("prompt").value = data.optimized;
+}else{
+alert("Erreur optimisation");
+}
 
 }
 
 /* ============================= */
-/* GENERER IMAGE */
+/* 🎨 GENERER IMAGE */
 /* ============================= */
 
 async function generate(){
 
 const prompt = document.getElementById("prompt").value;
+
+if(!prompt){
+alert("Écris un prompt !");
+return;
+}
 
 document.getElementById("loader").style.display="block";
 
