@@ -1,66 +1,105 @@
 import express from "express";
 import axios from "axios";
 import cors from "cors";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static("../public"));
 
 /* ============================= */
-/* 🦙 Llama → Optimiser Prompt */
+/* 🔥 PORT DYNAMIQUE RENDER */
+/* ============================= */
+
+const PORT = process.env.PORT || 3000;
+
+/* ============================= */
+/* 🦙 LLAMA → OPTIMISER PROMPT */
 /* ============================= */
 
 app.post("/optimize", async (req, res) => {
-  const { prompt } = req.body;
 
   try {
-    const response = await axios.post(
-      "http://localhost:11434/api/generate",
-      {
-        model: "llama3",
-        prompt: `
-You are a professional prompt engineer.
-Optimize this for cinematic image generation:
 
-${prompt}
-        `,
-        stream: false
+    const response = await axios.post(
+      "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
+      {
+        inputs: `
+You are a professional prompt engineer.
+
+Optimize this prompt for cinematic image generation:
+
+${req.body.prompt}
+`
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.HF_TOKEN}`
+        }
       }
     );
 
-    res.json({ optimized: response.data.response });
+    res.json({
+      optimized: response.data[0]?.generated_text
+    });
 
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+
+    res.status(500).json({
+      error: error.message
+    });
+
   }
+
 });
 
+
 /* ============================= */
-/* 🎨 Stable Diffusion → Image */
+/* 🎨 STABLE DIFFUSION → IMAGE */
 /* ============================= */
 
 app.post("/generate-image", async (req, res) => {
-  const { prompt } = req.body;
 
   try {
+
     const response = await axios.post(
-      "http://localhost:7860/sdapi/v1/txt2img",
+      "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
       {
-        prompt: prompt,
-        steps: 25
+        inputs: req.body.prompt
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.HF_TOKEN}`
+        },
+        responseType: "arraybuffer"
       }
     );
 
-    const image = response.data.images[0];
+    const base64Image = Buffer.from(response.data, "binary").toString("base64");
 
-    res.json({ image });
+    res.json({
+      image: base64Image
+    });
 
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+
+    res.status(500).json({
+      error: error.message
+    });
+
   }
+
 });
 
-app.listen(3000, () =>
-  console.log("🔥 Server running on port 3000")
-);
+
+/* ============================= */
+/* 🚀 LANCEMENT DU SERVEUR */
+/* ============================= */
+
+app.listen(PORT, () => {
+  console.log("🔥 Server running on port " + PORT);
+});
