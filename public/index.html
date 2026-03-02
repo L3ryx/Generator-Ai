@@ -6,10 +6,6 @@
 
 <style>
 
-/* ========================= */
-/* 🌿 THEME BANANA */
-/* ========================= */
-
 body{
 margin:0;
 font-family:Arial;
@@ -21,41 +17,38 @@ text-align:center;
 color:white;
 }
 
+.container{
+backdrop-filter: blur(15px);
+background:rgba(0,0,0,0.6);
+padding:40px;
+border-radius:25px;
+width:80%;
+margin:auto;
+margin-top:60px;
+box-shadow:0 0 40px black;
+}
+
 h1{
 color:red;
 text-shadow:0 0 15px red;
 }
 
-.container{
-backdrop-filter: blur(15px);
-background:rgba(0,0,0,0.6);
-padding:30px;
-border-radius:20px;
-width:80%;
-margin:auto;
-margin-top:40px;
-}
-
-/* TEXTAREA */
-
 textarea{
 width:90%;
 height:120px;
-border-radius:10px;
-padding:10px;
+border-radius:15px;
+padding:15px;
 border:none;
-margin:10px;
 font-size:16px;
+resize:none;
 }
-
-/* BUTTONS */
 
 button{
 background:red;
 color:white;
-padding:12px 18px;
+padding:12px 20px;
 border:none;
-border-radius:12px;
+border-radius:15px;
 cursor:pointer;
 font-weight:bold;
 margin:10px;
@@ -66,93 +59,104 @@ button:hover{
 opacity:0.8;
 }
 
-/* IMAGE */
-
-img{
+#resultImage{
 margin-top:20px;
 max-width:500px;
-border-radius:15px;
-box-shadow:0 0 20px black;
+border-radius:20px;
+display:none;
+box-shadow:0 0 30px black;
+}
+
+.loader{
+display:none;
+margin-top:20px;
+font-size:18px;
+color:yellow;
 }
 
 </style>
-
 </head>
 <body>
 
-<h1>🔥 Nano Banana Prompt Generator</h1>
-
 <div class="container">
 
-<h3>✍️ Base Prompt</h3>
+<h1>🔥 Nano Banana AI</h1>
 
 <textarea id="prompt" placeholder="Décris l’image que tu veux générer..."></textarea>
 
 <br>
 
-<button onclick="optimize()">🦙 Optimiser avec Llama</button>
-<button onclick="generateImage()">🍌 Générer Image</button>
+<button onclick="optimize()">🦙 Optimiser</button>
+<button onclick="generate()">🍌 Générer Image</button>
 
-<h3>✨ Résultat</h3>
-
-<div id="result"></div>
-
+<div class="loader" id="loader">
+⏳ Génération en cours...
 </div>
 
-<!-- ============================= -->
-<!-- JAVASCRIPT -->
-<!-- ============================= -->
+<img id="resultImage" />
+
+</div>
 
 <script>
 
 /* ============================= */
-/* 🦙 OPTIMISER PROMPT */
+/* URL BACKEND (REMPLACE PAR TON URL) */
+/* ============================= */
+
+const API_URL = "https://TON-URL.onrender.com";
+
+/* ============================= */
+/* OPTIMISER AVEC LLAMA */
 /* ============================= */
 
 async function optimize(){
 
 const prompt = document.getElementById("prompt").value;
 
-const res = await fetch("/optimize",{
+const res = await fetch(API_URL + "/optimize", {
 method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({prompt})
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify({ prompt })
 });
 
 const data = await res.json();
 
-if(data.optimized){
 document.getElementById("prompt").value = data.optimized;
-}else{
-alert("Erreur optimisation");
-}
 
 }
 
 /* ============================= */
-/* 🎨 GENERER IMAGE */
+/* GENERER IMAGE */
 /* ============================= */
 
-async function generateImage(){
+async function generate(){
 
 const prompt = document.getElementById("prompt").value;
 
-const res = await fetch("/generate-image",{
+document.getElementById("loader").style.display="block";
+
+const res = await fetch(API_URL + "/generate-image", {
 method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({prompt})
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify({ prompt })
 });
 
 const data = await res.json();
 
+const img = document.getElementById("resultImage");
+
 if(data.image){
 
-document.getElementById("result").innerHTML =
-`<img src="data:image/png;base64,${data.image}" />`;
+img.src = "data:image/png;base64," + data.image;
+img.style.display="block";
 
 }else{
-alert("Erreur génération image");
+
+alert("Erreur génération");
+
 }
+
+document.getElementById("loader").style.display="none";
 
 }
 
