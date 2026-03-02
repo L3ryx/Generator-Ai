@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(express.static("../public"));
 
 /* ============================= */
-/* PORT (RENDER) */
+/* PORT RENDER */
 /* ============================= */
 
 const PORT = process.env.PORT || 10000;
@@ -24,12 +24,12 @@ const PORT = process.env.PORT || 10000;
 
 app.get("/", (req, res) => {
   res.json({
-    message: "🔥 Nano Banana Backend Online"
+    status: "🔥 Nano Banana Backend Online"
   });
 });
 
 /* ===================================================== */
-/* 🦙 LLAMA → OPTIMISATION PROMPT */
+/* 🦙 LLAMA (API OFFICIELLE ROUTER HUGGINGFACE) */
 /* ===================================================== */
 
 app.post("/optimize", async (req, res) => {
@@ -42,28 +42,41 @@ app.post("/optimize", async (req, res) => {
       return res.status(400).json({ error: "Prompt manquant" });
     }
 
-    console.log("🦙 Optimisation :", prompt);
+    console.log("🦙 Optimisation du prompt :", prompt);
 
     const response = await axios.post(
-      "https://router.huggingface.co/hf-inference/models/meta-llama/Meta-Llama-3-8B-Instruct",
+      "https://router.huggingface.co/v1/chat/completions",
       {
-        inputs: `
+        model: "meta-llama/Meta-Llama-3-8B-Instruct:novita",
+        messages: [
+          {
+            role: "user",
+            content: `
 You are a professional prompt engineer.
 
 Optimize this prompt for cinematic AI image generation:
 
 ${prompt}
-`
+            `
+          }
+        ],
+        max_tokens: 512,
+        temperature: 0.7
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.HF_TOKEN}`
+          Authorization: `Bearer ${process.env.HF_TOKEN}`,
+          "Content-Type": "application/json"
         }
       }
     );
 
+    const result = response.data;
+
     res.json({
-      optimized: response.data?.[0]?.generated_text || "Erreur optimisation"
+      optimized:
+        result.choices?.[0]?.message?.content ||
+        "Erreur optimisation"
     });
 
   } catch (error) {
@@ -93,7 +106,7 @@ app.post("/generate-image", async (req, res) => {
       return res.status(400).json({ error: "Prompt manquant" });
     }
 
-    console.log("🖼 Prompt envoyé :", prompt);
+    console.log("🖼 Prompt image :", prompt);
 
     const response = await axios.post(
       "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0",
@@ -108,10 +121,10 @@ app.post("/generate-image", async (req, res) => {
       }
     );
 
-    const base64Image = Buffer.from(response.data).toString("base64");
+    const imageBase64 = Buffer.from(response.data).toString("base64");
 
     res.json({
-      image: base64Image
+      image: imageBase64
     });
 
   } catch (error) {
