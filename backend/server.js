@@ -29,7 +29,7 @@ app.get("/", (req, res) => {
 });
 
 /* ===================================================== */
-/* 🦙 LLAMA (API OFFICIELLE ROUTER HUGGINGFACE) */
+/* 🦙 LLAMA VIA ROUTER (CHAT COMPLETIONS) */
 /* ===================================================== */
 
 app.post("/optimize", async (req, res) => {
@@ -42,7 +42,7 @@ app.post("/optimize", async (req, res) => {
       return res.status(400).json({ error: "Prompt manquant" });
     }
 
-    console.log("🦙 Optimisation du prompt :", prompt);
+    console.log("🦙 Optimisation :", prompt);
 
     const response = await axios.post(
       "https://router.huggingface.co/v1/chat/completions",
@@ -71,17 +71,15 @@ ${prompt}
       }
     );
 
-    const result = response.data;
-
     res.json({
       optimized:
-        result.choices?.[0]?.message?.content ||
+        response.data?.choices?.[0]?.message?.content ||
         "Erreur optimisation"
     });
 
   } catch (error) {
 
-    console.log("❌ ERROR LLAMA");
+    console.log("❌ LLAMA ERROR");
     console.log(error.response?.data || error.message);
 
     res.status(500).json({
@@ -93,7 +91,7 @@ ${prompt}
 
 
 /* ===================================================== */
-/* 🎨 IMAGE GENERATION (SDXL VIA ROUTER) */
+/* 🎨 STABLE DIFFUSION XL VIA ROUTER (IMAGE) */
 /* ===================================================== */
 
 app.post("/generate-image", async (req, res) => {
@@ -106,7 +104,7 @@ app.post("/generate-image", async (req, res) => {
       return res.status(400).json({ error: "Prompt manquant" });
     }
 
-    console.log("🖼 Prompt image :", prompt);
+    console.log("🖼 Image prompt :", prompt);
 
     const response = await axios.post(
       "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0",
@@ -115,16 +113,17 @@ app.post("/generate-image", async (req, res) => {
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.HF_TOKEN}`
+          Authorization: `Bearer ${process.env.HF_TOKEN}`,
+          "Content-Type": "application/json"
         },
         responseType: "arraybuffer"
       }
     );
 
-    const imageBase64 = Buffer.from(response.data).toString("base64");
+    const base64Image = Buffer.from(response.data).toString("base64");
 
     res.json({
-      image: imageBase64
+      image: base64Image
     });
 
   } catch (error) {
