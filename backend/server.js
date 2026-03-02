@@ -1,139 +1,92 @@
 import express from "express";
-import cors from "cors";
 import axios from "axios";
-import dotenv from "dotenv";
-
-dotenv.config();
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
-const PORT = process.env.PORT || 10000;
 
-/* ========================= */
-/* MIDDLEWARE */
-/* ========================= */
+/* ================= MIDDLEWARE ================= */
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static("public"));
 
-/* ========================= */
-/* 🔥 CACHE + QUEUE */
-/* ========================= */
+/* ✅ CHEMIN CORRECT VERS LE DOSSIER PUBLIC */
 
-const cache = new Map();
-let queue = [];
-let isProcessing = false;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-function processQueue() {
-  if (isProcessing || queue.length === 0) return;
+app.use(express.static(path.join(__dirname, "..", "public")));
 
-  isProcessing = true;
-  const { req, res, handler } = queue.shift();
+/* ================= PORT ================= */
 
-  handler(req, res).finally(() => {
-    isProcessing = false;
-    processQueue();
-  });
-}
+const PORT = process.env.PORT || 10000;
 
-function addToQueue(req, res, handler) {
-  queue.push({ req, res, handler });
-  processQueue();
-}
+/* ================= ROUTES API ================= */
 
-/* ========================= */
-/* 🦙 LLM OPTIMISATION */
-/* ========================= */
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "index.html"));
+});
 
-app.post("/optimize", (req, res) => {
-  addToQueue(req, res, async (req, res) => {
+/* ================= LLAMA ================= */
 
-    const prompt = req.body.prompt;
-    if (!prompt) return res.status(400).json({ error: "Prompt manquant" });
-
-    try {
-
-      const response = await axios.post(
-        "https://router.huggingface.co/v1/chat/completions",
-        {
-          model: "meta-llama/Meta-Llama-3-8B-Instruct",
-          messages: [
-            {
-              role: "user",
-              content: `Optimize this prompt for cinematic image generation:\n\n${prompt}`
-            }
-          ],
-          stream: false
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.HF_TOKEN}`
+app.post("/optimize", async (req, res) => {
+  try {
+    const response = await axios.post(
+      "https://router.huggingface.co/v1/chat/completions",
+      {
+        model: "meta-llama/Meta-Llama-3-8B-Instruct",
+        messages: [
+          {
+            role: "user",
+            content: `Optimize this prompt for cinematic image generation:\n\n${req.body.prompt}`
           }
+        ],
+        max_tokens: 500
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.HF_TOKEN}`
         }
-      );
+      }
+    );
 
-      const optimized = response.data.choices?.[0]?.message?.content;
+    res.json({
+      optimized: response.data.choices[0].message.content
+    });
 
-      res.json({ optimized });
-
-    } catch (err) {
-
-      console.log("LLAMA ERROR:", err.response?.data || err.message);
-      res.status(500).json({ error: "LLAMA ERROR" });
-
-    }
-  });
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).json({ error: "LLAMA error" });
+  }
 });
 
-/* ========================= */
-/* 🎨 IMAGE GENERATION */
-/* ========================= */
+/* ================= IMAGE ================= */
 
-app.post("/generate-image", (req, res) => {
+app.post("/generate-image", async (req, res) => {
+  try {
+    const response = await axios.post(
+      "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+      { inputs: req.body.prompt },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.HF_TOKEN}`
+        },
+        responseType: "arraybuffer"
+      }
+    );
 
-  addToQueue(req, res, async (req, res) => {
+    const base64 = Buffer.from(response.data).toString("base64");
 
-    const prompt = req.body.prompt;
-    if (!prompt) return res.status(400).json({ error: "Prompt manquant" });
+    res.json({ image: base64 });
 
-    /* 🔥 CACHE */
-    if (cache.has(prompt)) {
-      console.log("⚡ Image from cache");
-      return res.json({ image: cache.get(prompt) });
-    }
-
-    try {
-
-      const response = await axios.post(
-        "https://router.huggingface.co/models/stable-diffusion-v1-5/stable-diffusion-v1-5",
-        { inputs: prompt },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.HF_TOKEN}`
-          },
-          responseType: "arraybuffer"
-        }
-      );
-
-      const base64 = Buffer.from(response.data).toString("base64");
-
-      cache.set(prompt, base64);
-
-      res.json({ image: base64 });
-
-    } catch (err) {
-
-      console.log("IMAGE ERROR:", err.response?.data || err.message);
-      res.status(500).json({ error: "IMAGE GENERATION FAILED" });
-
-    }
-  });
-
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).json({ error: "Image generation failed" });
+  }
 });
 
-/* ========================= */
-/* SERVER START */
-/* ========================= */
+/* ================= START SERVER ================= */
 
 app.listen(PORT, () => {
   console.log("🔥 Server running on port", PORT);
